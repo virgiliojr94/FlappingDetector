@@ -7,6 +7,30 @@
 	"url":              "https://github.com/virgiliojr94",
 	"description":      "Detects flapping triggers — those changing state too frequently — and shows a badge on the Problems list plus a global investigation view.",
 	"namespace":        "FlappingDetector",
+	"actions": {
+		"flapping.view": {
+			"class": "CControllerFlappingView",
+			"layout": "layout.htmlpage",
+			"view": "flapping.view"
+		},
+		"flapping.history": {
+			"class": "CControllerFlappingHistory",
+			"layout": "layout.htmlpage",
+			"view": "flapping.history.view"
+		},
+		"flapping.badge.data": {
+			"class": "CControllerFlappingBadge",
+			"layout": "layout.json"
+		}
+	},
+	"assets": {
+		"css": [
+			"flapping.css"
+		],
+		"js": [
+			"flapping-badge.js"
+		]
+	},
 	"requirements": {
 		"zabbix": ">=7.0"
 	}

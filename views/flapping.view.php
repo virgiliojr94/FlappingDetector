@@ -12,13 +12,37 @@
  */
 
 $this->includeJsFile('flapping.js.php');
-page_header();
+
+if (!function_exists('flapping_sort_header')) {
+	function flapping_sort_header(string $field, string $label, array $data): string {
+		$is_current = $data['sort'] === $field;
+		$next_sortorder = $is_current && $data['sortorder'] === 'ASC' ? 'DESC' : 'ASC';
+		$indicator = $is_current ? ($data['sortorder'] === 'ASC' ? ' ▲' : ' ▼') : '';
+
+		$url = (new CUrl('zabbix.php'))
+			->setArgument('action', 'flapping.view')
+			->setArgument('time_window', $data['time_window'])
+			->setArgument('min_flaps', $data['min_flaps'])
+			->setArgument('groupid', $data['groupid'])
+			->setArgument('sort', $field)
+			->setArgument('sortorder', $next_sortorder);
+
+		return sprintf(
+			'<th><a href="%s">%s%s</a></th>',
+			htmlspecialchars($url->getUrl()),
+			htmlspecialchars($label),
+			$indicator
+		);
+	}
+}
+
+$counts = ['high' => 0, 'medium' => 0, 'low' => 0];
+foreach ($data['flapping'] as $flapping_item) {
+	$counts[$flapping_item['severity']]++;
+}
 ?>
-<link rel="stylesheet" href="<?= $this->getModule()->getDir() ?>/assets/css/flapping.css">
 
 <div class="flapping-page">
-
-	<!-- Header -->
 	<div class="flapping-header">
 		<h1><?= _('Flapping Detector') ?></h1>
 		<p class="flapping-subtitle">
@@ -26,16 +50,15 @@ page_header();
 		</p>
 	</div>
 
-	<!-- Filter bar -->
 	<div class="flapping-filters">
-		<form method="get" action="<?= (new CUrl('zabbix.php'))->setArgument('action', 'flapping.view') ?>">
+		<form method="get" action="<?= (new CUrl('zabbix.php'))->setArgument('action', 'flapping.view')->getUrl() ?>">
 			<input type="hidden" name="action" value="flapping.view">
 
 			<div class="filter-group">
 				<label><?= _('Time window') ?></label>
 				<select name="time_window" class="filter-select">
-					<?php foreach ([1 => '1h', 6 => '6h', 12 => '12h', 24 => '24h', 168 => '7d'] as $val => $label): ?>
-						<option value="<?= $val ?>" <?= $data['time_window'] == $val ? 'selected' : '' ?>>
+					<?php foreach ([1 => '1h', 6 => '6h', 12 => '12h', 24 => '24h', 168 => '7d'] as $value => $label): ?>
+						<option value="<?= $value ?>" <?= $data['time_window'] == $value ? 'selected' : '' ?>>
 							<?= $label ?>
 						</option>
 					<?php endforeach ?>
@@ -44,17 +67,23 @@ page_header();
 
 			<div class="filter-group">
 				<label><?= _('Min flips') ?></label>
-				<input type="number" name="min_flaps" value="<?= $data['min_flaps'] ?>"
-					min="2" max="100" class="filter-input-num">
+				<input
+					type="number"
+					name="min_flaps"
+					value="<?= $data['min_flaps'] ?>"
+					min="2"
+					max="100"
+					class="filter-input-num"
+				>
 			</div>
 
 			<div class="filter-group">
 				<label><?= _('Host group') ?></label>
 				<select name="groupid" class="filter-select">
 					<option value="0"><?= _('All groups') ?></option>
-					<?php foreach ($data['groups'] as $g): ?>
-						<option value="<?= $g['groupid'] ?>" <?= $data['groupid'] == $g['groupid'] ? 'selected' : '' ?>>
-							<?= htmlspecialchars($g['name']) ?>
+					<?php foreach ($data['groups'] as $group): ?>
+						<option value="<?= $group['groupid'] ?>" <?= $data['groupid'] == $group['groupid'] ? 'selected' : '' ?>>
+							<?= htmlspecialchars($group['name']) ?>
 						</option>
 					<?php endforeach ?>
 				</select>
@@ -64,11 +93,6 @@ page_header();
 		</form>
 	</div>
 
-	<!-- Summary pills -->
-	<?php
-	$counts = ['high' => 0, 'medium' => 0, 'low' => 0];
-	foreach ($data['flapping'] as $f) $counts[$f['severity']]++;
-	?>
 	<div class="flapping-summary">
 		<span class="summary-pill total"><?= $data['total'] ?> <?= _('flapping triggers') ?></span>
 		<?php if ($counts['high']): ?>
@@ -82,88 +106,81 @@ page_header();
 		<?php endif ?>
 	</div>
 
-	<!-- Table -->
 	<?php if ($data['flapping']): ?>
-	<div class="flapping-table-wrap">
-		<table class="flapping-table">
-			<thead>
-				<tr>
-					<th><?= _('Severity') ?></th>
-					<?= $this->sortHeader('host',       _('Host'),       $data) ?>
-					<?= $this->sortHeader('name',       _('Trigger'),    $data) ?>
-					<?= $this->sortHeader('priority',   _('Priority'),   $data) ?>
-					<?= $this->sortHeader('flap_count', _('Flips'),      $data) ?>
-					<?= $this->sortHeader('flap_rate',  _('Rate /h'),    $data) ?>
-					<?= $this->sortHeader('last_clock', _('Last flip'),  $data) ?>
-					<th><?= _('State') ?></th>
-					<th><?= _('History') ?></th>
-				</tr>
-			</thead>
-			<tbody>
-				<?php foreach ($data['flapping'] as $f): ?>
-				<tr class="flap-row severity-<?= $f['severity'] ?>">
-					<td>
-						<span class="flap-badge <?= $f['severity'] ?>">
-							<?= strtoupper($f['severity']) ?>
-						</span>
-					</td>
-					<td class="cell-host">
-						<a href="<?= (new CUrl('zabbix.php'))
-							->setArgument('action', 'host.edit')
-							->setArgument('hostid', $f['hostid']) ?>">
-							<?= htmlspecialchars($f['host']) ?>
-						</a>
-					</td>
-					<td class="cell-trigger"><?= htmlspecialchars($f['name']) ?></td>
-					<td><?= severity_name($f['priority']) ?></td>
-					<td class="cell-count">
-						<strong><?= $f['flap_count'] ?></strong>
-						<span class="cell-sub"><?= _n('flip', 'flips', $f['flap_count']) ?></span>
-					</td>
-					<td class="cell-rate"><?= $f['flap_rate'] ?>/h</td>
-					<td class="cell-time">
-						<?= zbx_date2str(DATE_TIME_FORMAT, $f['last_clock']) ?>
-					</td>
-					<td>
-						<span class="state-dot <?= $f['last_value'] ? 'problem' : 'ok' ?>"></span>
-						<?= $f['last_value'] ? _('PROBLEM') : _('OK') ?>
-					</td>
-					<td>
-						<a href="<?= (new CUrl('zabbix.php'))
-							->setArgument('action', 'flapping.history')
-							->setArgument('triggerid', $f['triggerid'])
-							->setArgument('time_window', $data['time_window']) ?>"
-							class="btn-history" title="<?= _('View flip history') ?>">
-							📈
-						</a>
-					</td>
-				</tr>
-				<?php endforeach ?>
-			</tbody>
-		</table>
-	</div>
+		<div class="flapping-table-wrap">
+			<table class="flapping-table">
+				<thead>
+					<tr>
+						<th><?= _('Severity') ?></th>
+						<?= flapping_sort_header('host', _('Host'), $data) ?>
+						<?= flapping_sort_header('name', _('Trigger'), $data) ?>
+						<?= flapping_sort_header('priority', _('Priority'), $data) ?>
+						<?= flapping_sort_header('flap_count', _('Flips'), $data) ?>
+						<?= flapping_sort_header('flap_rate', _('Rate /h'), $data) ?>
+						<?= flapping_sort_header('last_clock', _('Last flip'), $data) ?>
+						<th><?= _('State') ?></th>
+						<th><?= _('History') ?></th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php foreach ($data['flapping'] as $flapping_item): ?>
+						<tr class="flap-row severity-<?= $flapping_item['severity'] ?>">
+							<td>
+								<span class="flap-badge <?= $flapping_item['severity'] ?>">
+									<?= strtoupper($flapping_item['severity']) ?>
+								</span>
+							</td>
+							<td class="cell-host">
+								<a href="<?= (new CUrl('zabbix.php'))
+									->setArgument('action', 'host.edit')
+									->setArgument('hostid', $flapping_item['hostid'])
+									->getUrl() ?>">
+									<?= htmlspecialchars($flapping_item['host']) ?>
+								</a>
+							</td>
+							<td class="cell-trigger"><?= htmlspecialchars($flapping_item['name']) ?></td>
+							<td><?= CSeverityHelper::getName((int) $flapping_item['priority']) ?></td>
+							<td class="cell-count">
+								<strong><?= $flapping_item['flap_count'] ?></strong>
+								<span class="cell-sub"><?= _n('flip', 'flips', $flapping_item['flap_count']) ?></span>
+							</td>
+							<td class="cell-rate"><?= $flapping_item['flap_rate'] ?>/h</td>
+							<td class="cell-time">
+								<?= $flapping_item['last_clock'] > 0 ? zbx_date2str(DATE_TIME_FORMAT, $flapping_item['last_clock']) : '—' ?>
+							</td>
+							<td>
+								<span class="state-dot <?= $flapping_item['last_value'] ? 'problem' : 'ok' ?>"></span>
+								<?= $flapping_item['last_value'] ? _('PROBLEM') : _('OK') ?>
+							</td>
+							<td>
+								<a
+									href="<?= (new CUrl('zabbix.php'))
+										->setArgument('action', 'flapping.history')
+										->setArgument('triggerid', $flapping_item['triggerid'])
+										->setArgument('time_window', $data['time_window'])
+										->getUrl() ?>"
+									class="btn-history"
+									title="<?= _('View flip history') ?>"
+								>
+									📈
+								</a>
+							</td>
+						</tr>
+					<?php endforeach ?>
+				</tbody>
+			</table>
+		</div>
 	<?php else: ?>
-	<div class="flapping-empty">
-		<div class="empty-icon">✅</div>
-		<p><?= _('No flapping triggers detected in the selected window.') ?></p>
-		<p class="empty-hint">
-			<?= sprintf(_('Criteria: ≥ %d state flips in the last %s.'),
-				$data['min_flaps'],
-				$data['time_window'] >= 168 ? '7 days' : $data['time_window'].'h'
-			) ?>
-		</p>
-	</div>
+		<div class="flapping-empty">
+			<div class="empty-icon">✅</div>
+			<p><?= _('No flapping triggers detected in the selected window.') ?></p>
+			<p class="empty-hint">
+				<?= sprintf(
+					_('Criteria: ≥ %d state flips in the last %s.'),
+					$data['min_flaps'],
+					$data['time_window'] >= 168 ? '7 days' : $data['time_window'].'h'
+				) ?>
+			</p>
+		</div>
 	<?php endif ?>
-
 </div>
-
-<?php
-page_footer();
-
-// Helper for sortable column headers
-function severity_name(int $priority): string {
-	$map = [0 => 'Not classified', 1 => 'Information', 2 => 'Warning',
-	        3 => 'Average', 4 => 'High', 5 => 'Disaster'];
-	return $map[$priority] ?? 'Unknown';
-}
-?>
