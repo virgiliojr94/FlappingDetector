@@ -42,7 +42,7 @@ foreach ($data['flapping'] as $flapping_item) {
 }
 ?>
 
-<div class="flapping-page">
+<div class="flapping-page flapping-page-overview">
 	<div class="flapping-header">
 		<h1><?= _('Flapping Detector') ?></h1>
 		<p class="flapping-subtitle">
@@ -94,15 +94,27 @@ foreach ($data['flapping'] as $flapping_item) {
 	</div>
 
 	<div class="flapping-summary">
-		<span class="summary-pill total"><?= $data['total'] ?> <?= _('flapping triggers') ?></span>
+		<span class="summary-pill total">
+			<span class="summary-value"><?= $data['total'] ?></span>
+			<span class="summary-label"><?= _('flapping triggers') ?></span>
+		</span>
 		<?php if ($counts['high']): ?>
-			<span class="summary-pill high"><?= $counts['high'] ?> <?= _('high') ?></span>
+			<span class="summary-pill high">
+				<span class="summary-value"><?= $counts['high'] ?></span>
+				<span class="summary-label"><?= _('high') ?></span>
+			</span>
 		<?php endif ?>
 		<?php if ($counts['medium']): ?>
-			<span class="summary-pill medium"><?= $counts['medium'] ?> <?= _('medium') ?></span>
+			<span class="summary-pill medium">
+				<span class="summary-value"><?= $counts['medium'] ?></span>
+				<span class="summary-label"><?= _('medium') ?></span>
+			</span>
 		<?php endif ?>
 		<?php if ($counts['low']): ?>
-			<span class="summary-pill low"><?= $counts['low'] ?> <?= _('low') ?></span>
+			<span class="summary-pill low">
+				<span class="summary-value"><?= $counts['low'] ?></span>
+				<span class="summary-label"><?= _('low') ?></span>
+			</span>
 		<?php endif ?>
 	</div>
 

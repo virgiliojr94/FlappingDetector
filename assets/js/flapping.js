@@ -1,13 +1,9 @@
 const FlappingCharts = (() => {
 	'use strict';
 
-	function isDarkTheme() {
-		const bodyTheme = document.body ? document.body.getAttribute('theme') : null;
-		const documentTheme = document.documentElement.getAttribute('theme');
-
-		return bodyTheme === 'dark-theme'
-			|| documentTheme === 'dark-theme'
-			|| window.matchMedia('(prefers-color-scheme: dark)').matches;
+	function getCssVar(element, name, fallback) {
+		const value = window.getComputedStyle(element).getPropertyValue(name).trim();
+		return value || fallback;
 	}
 
 	function renderHourly(canvas, buckets, windowH) {
@@ -17,7 +13,7 @@ const FlappingCharts = (() => {
 
 		const dpr = window.devicePixelRatio || 1;
 		const width = canvas.offsetWidth || 600;
-		const height = canvas.offsetHeight || 120;
+		const height = canvas.offsetHeight || 220;
 		const ctx = canvas.getContext('2d');
 
 		if (!ctx) {
@@ -29,21 +25,21 @@ const FlappingCharts = (() => {
 		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
 		const PAD_L = 36;
-		const PAD_R = 12;
-		const PAD_T = 12;
-		const PAD_B = 28;
+		const PAD_R = 14;
+		const PAD_T = 16;
+		const PAD_B = 30;
 		const chartW = width - PAD_L - PAD_R;
 		const chartH = height - PAD_T - PAD_B;
 		const max = Math.max(...buckets, 1);
 		const count = buckets.length;
 		const step = chartW / count;
-		const barW = Math.max(2, step - 2);
-		const dark = isDarkTheme();
-		const colorBg = dark ? '#1f1f23' : '#f7f7f5';
-		const colorBar = dark ? '#4f8ef7' : '#2563eb';
-		const colorHotBar = dark ? '#f87171' : '#dc2626';
-		const colorText = dark ? '#9ca3af' : '#6b7280';
-		const colorGrid = dark ? '#2d2d2d' : '#e5e7eb';
+		const barW = Math.max(2, step - 3);
+		const scope = canvas.closest('.flapping-page') || canvas;
+		const colorBg = getCssVar(scope, '--flap-chart-bg', '#f0f5fa');
+		const colorBar = getCssVar(scope, '--flap-chart-bar', '#2d79d1');
+		const colorHotBar = getCssVar(scope, '--flap-chart-hot', '#d74a4a');
+		const colorText = getCssVar(scope, '--flap-chart-text', '#627086');
+		const colorGrid = getCssVar(scope, '--flap-chart-grid', 'rgba(44, 60, 80, 0.12)');
 
 		ctx.fillStyle = colorBg;
 		ctx.fillRect(0, 0, width, height);
@@ -69,7 +65,7 @@ const FlappingCharts = (() => {
 			const y = PAD_T + chartH - barH;
 
 			ctx.fillStyle = value >= max * 0.75 ? colorHotBar : colorBar;
-			ctx.fillRect(x + 1, y, barW, barH);
+			ctx.fillRect(x + 1.5, y, barW, barH);
 		}
 
 		ctx.fillStyle = colorText;
@@ -79,9 +75,9 @@ const FlappingCharts = (() => {
 		ctx.fillText('0', PAD_L - 4, PAD_T + chartH);
 
 		ctx.textAlign = 'left';
-		ctx.fillText(`-${windowH}h`, PAD_L, height - 6);
+		ctx.fillText(`-${windowH}h`, PAD_L, height - 8);
 		ctx.textAlign = 'right';
-		ctx.fillText('now', PAD_L + chartW, height - 6);
+		ctx.fillText('now', PAD_L + chartW, height - 8);
 
 		ctx.strokeStyle = colorGrid;
 		ctx.lineWidth = 1;
