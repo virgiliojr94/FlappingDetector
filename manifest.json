@@ -1,0 +1,13 @@
+{
+	"manifest_version": 2,
+	"id":               "flapping_detector",
+	"name":             "Flapping Detector",
+	"version":          "1.0.0",
+	"author":           "Virgilio Borges",
+	"url":              "https://github.com/virgiliojr94",
+	"description":      "Detects flapping triggers — those changing state too frequently — and shows a badge on the Problems list plus a global investigation view.",
+	"namespace":        "FlappingDetector",
+	"requirements": {
+		"zabbix": ">=7.0"
+	}
+}

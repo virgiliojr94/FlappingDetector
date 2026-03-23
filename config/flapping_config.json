@@ -1,0 +1,13 @@
+{
+	"default_time_window": 6,
+	"default_min_flaps": 3,
+	"severity_thresholds": {
+		"high":   { "min_flaps": 10, "min_rate_per_hour": 1.0 },
+		"medium": { "min_flaps": 5,  "min_rate_per_hour": 0.5 },
+		"low":    { "min_flaps": 3,  "min_rate_per_hour": 0.0 }
+	},
+	"badge": {
+		"enabled": true,
+		"time_window": 6
+	}
+}
