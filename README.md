@@ -14,10 +14,10 @@ As defined by the Cloudflare Observability team: an alert that **changes state t
 
 ## Features
 
-- **Badge on Problems list** — a colored pill (⚡ N) appears inline on each flapping trigger row. No extra columns; injected non-intrusively via JavaScript.
+- **Badge on Problems list** — a colored pill (⚡ N) appears inline on each flapping trigger row and links directly to the trigger history view.
 - **Global flapping view** — `Monitoring → Flapping Detector` shows all currently flapping triggers sorted by flip count, with severity classification and filters.
 - **Flip history** — per-trigger detail page with hourly bar chart of flip activity, full state timeline (PROBLEM / OK), and an actionable recommendation.
-- **Configurable thresholds** — time window (1h / 6h / 12h / 24h / 7d), minimum flips, host group filter.
+- **Configurable thresholds** — time window (1h / 6h / 12h / 24h / 7d), minimum flips, host group filter, plus default thresholds loaded from `config/flapping_config.json`.
 
 ---
 
@@ -58,7 +58,7 @@ A "flip" is any PROBLEM→OK or OK→PROBLEM state change. This is the same metr
 
 ## Requirements
 
-- Zabbix 7.0.x or 7.4.x
+- Zabbix 7.0+
 - PHP 8.0+
 
 ---
@@ -74,15 +74,47 @@ cp -r FlappingDetector /usr/share/zabbix/modules/
 3. The module adds **Monitoring → Flapping Detector** to the menu
 4. Badges are automatically injected into **Monitoring → Problems**
 
+### Updating an existing installation
+
+If the module is already installed:
+
+1. Overwrite the module files in `/usr/share/zabbix/modules/FlappingDetector`
+2. Go to **Administration → General → Modules**
+3. Disable and enable **Flapping Detector** again to force Zabbix to reload the manifest and assets
+4. Hard refresh the browser to invalidate old JavaScript and CSS
+
+---
+
+## Configuration
+
+The module can load default values from:
+
+```text
+config/flapping_config.json
+```
+
+If the file is missing, the module falls back to built-in defaults in `CControllerFlappingBase.php`.
+
+Currently used settings:
+
+- `default_time_window`
+- `default_min_flaps`
+- `severity_thresholds.high`
+- `severity_thresholds.medium`
+- `severity_thresholds.low`
+
+The filters on the Flapping Detector page still override these defaults per request.
+
 ---
 
 ## File layout
 
 ```
 FlappingDetector/
-├── manifest.json
+├── manifest.json                            # Registers actions and global assets
 ├── Module.php
 ├── actions/
+│   ├── CControllerFlappingBase.php          # Shared defaults / severity / JSON helpers
 │   ├── CControllerFlappingView.php          # Global flapping list
 │   ├── CControllerFlappingHistory.php       # Per-trigger history
 │   └── CControllerFlappingBadge.php         # Lightweight badge data endpoint
